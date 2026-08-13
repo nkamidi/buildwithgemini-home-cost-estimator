@@ -13,16 +13,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from a2ui.basic_catalog.provider import BasicCatalog
+from a2ui.schema.manager import A2uiSchemaManager
 from google.adk.agents import Agent
 from google.adk.apps import App
 from google.adk.models import Gemini
 from google.genai import types
 
+from app.a2ui_utils import a2ui_callback
 from app.tools import calculate_home_estimate, get_zip_info
 
 MODEL = "gemini-3.6-flash"
 
-SYSTEM_INSTRUCTION = """You are a meticulous Custom Home Construction "Value Engineer" & Cost Estimator AI.
+schema_manager = A2uiSchemaManager(
+    version="0.8",
+    catalogs=[BasicCatalog.get_config("0.8")],
+)
+
+BASE_INSTRUCTION = """You are a meticulous Custom Home Construction "Value Engineer" & Cost Estimator AI.
 
 STRICT ONE-BY-ONE SEQUENTIAL QUESTIONNAIRE RULE:
 You MUST ask for missing project parameters ONE BY ONE in the exact sequence below.
@@ -41,7 +49,7 @@ Sequential Parameter Checklist:
 
 Behavior per turn:
 - Check which parameters in the checklist have already been supplied by the user.
-- Identify the VERY FIRST missing parameter in the sequence (e.g. if Budget & ZIP Code are supplied, the next single parameter to ask is Square Footage).
+- Identify the VERY FIRST missing parameter in the sequence.
 - Acknowledge what was just provided, state the progress (e.g. "Step 3 of 9: Square Footage"), and prompt the user ONLY for that ONE missing parameter.
 - Always include 3 to 4 clickable option choices formatted like `[Choice Text]` for the current question so the user can click a button to answer.
 - DO NOT invoke `calculate_home_estimate` until ALL 9 steps are completed.
@@ -49,13 +57,7 @@ Behavior per turn:
 Phase 2: First-Level Cost & Timeline Report (After Step 9)
 ONLY when ALL 9 parameters have been supplied:
 1. Call `calculate_home_estimate` with the full parameters.
-2. Present the comprehensive "First-Level Cost & Timeline Report":
-   - Land Preparation (including slope excavation if applicable)
-   - Building Structure & Framing
-   - Material vs. Labor Split
-   - Finishes Breakdown
-   - Regional ZIP Cost Index Multiplier
-   - Weather-Adjusted Timeline Estimate (rain/snow days delay)
+2. Present the comprehensive "First-Level Cost & Timeline Report" with itemized breakdown and weather-adjusted timeline.
 
 Phase 3: Value Engineering & Optimizations
 After rendering the report:
@@ -63,13 +65,28 @@ After rendering the report:
 - Offer next step choices (e.g. `[Apply Value Engineering Suggestions]`, `[Adjust Budget]`).
 """
 
+system_prompt = schema_manager.generate_system_prompt(
+    role_description="meticulous Custom Home Construction Value Engineer & Cost Estimator AI",
+    workflow_description=BASE_INSTRUCTION,
+    ui_description=(
+        "Keep every surface tiny and flat: ONE Card > ONE Column > a few Text rows. "
+        "Never nest a Card inside a Card. "
+        "Use ONLY these components: Card, Column, Row, Text, Divider. "
+        "No markdown in text; use the usageHint property ('h1', 'h2', 'body') for headings and emphasis. "
+        "Output ONLY raw A2UI JSON array when rendering cards or reports."
+    ),
+    include_schema=True,
+    include_examples=True,
+)
+
 root_agent = Agent(
     name="root_agent",
     model=Gemini(
         model=MODEL,
         retry_options=types.HttpRetryOptions(attempts=3),
     ),
-    instruction=SYSTEM_INSTRUCTION,
+    instruction=system_prompt,
+    after_model_callback=a2ui_callback,
     tools=[
         calculate_home_estimate,
         get_zip_info,
