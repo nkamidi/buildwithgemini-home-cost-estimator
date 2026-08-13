@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Custom Home Build Cost Estimator & Value Engineer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined">
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --accent-light: #eff6ff;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --success: #16a34a;
+    --warning: #d97706;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Outfit', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+  
+  header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  header .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  header span.badge {
+    background: rgba(37,99,235,0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(96,165,250,0.3);
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+  }
+  .reset-btn {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    font-size: 0.8rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+  }
+  .reset-btn:hover {
+    background: rgba(239, 68, 68, 0.4);
+    color: #fff;
+  }
+
+  /* Interactive Spec Tracker Bar */
+  #spec-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.8rem;
+    border-radius: 20px;
+    background: #f1f5f9;
+    border: 1px solid var(--border);
+    font-size: 0.825rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .chip:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+  }
+  .chip.active {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  #main-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+
+  #log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .msg { display: flex; flex-direction: column; }
+  .msg.user { align-items: flex-end; }
+  .msg.agent { align-items: flex-start; }
+
+  .bubble {
+    display: inline-block;
+    padding: 0.85rem 1.1rem;
+    border-radius: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    max-width: 85%;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  }
+  .msg.user .bubble {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.agent .bubble {
+    border-bottom-left-radius: 4px;
+  }
+
+  .bubble.rich {
+    background: transparent;
+    border: none;
+    padding: 0;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  /* Interactive Quick Choice Buttons */
+  .quick-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+  .quick-btn {
+    background: var(--accent-light);
+    color: var(--accent);
+    border: 1px solid rgba(37,99,235,0.3);
+    padding: 0.5rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .quick-btn:hover {
+    background: var(--accent);
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(37,99,235,0.25);
+  }
+
+  form {
+    display: flex;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+  }
+  input {
+    flex: 1;
+    padding: 0.85rem 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 1rem;
+    font-family: inherit;
+    outline: none;
+    transition: border 0.2s ease;
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+  button {
+    padding: 0.85rem 1.4rem;
+    border: none;
+    border-radius: 12px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  button:hover { background: var(--accent-hover); }
+
+  /* A2UI Component Styles */
+  .a2card {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    background: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    max-width: 100%;
+  }
+  .a2col { display: flex; flex-direction: column; gap: 0.5rem; }
+  .a2row { display: flex; flex-direction: row; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+  .a2row.between { justify-content: space-between; }
+  .a2text { margin: 0; line-height: 1.4; }
+  .a2text.a2-h1 { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+  .a2text.a2-h2 { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+  .a2text.a2-h3 { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
+  .a2divider { border: none; border-top: 1px solid var(--border); margin: 0.5rem 0; width: 100%; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🏡 Custom Home Build Cost Estimator</h1>
+  <div class="header-actions">
+    <span class="badge">Value Engineer Mode</span>
+    <button class="reset-btn" onclick="sendMessage('/reset')">🔄 Reset Session</button>
+  </div>
+</header>
+
+<div id="spec-bar">
+  <div class="chip active" onclick="quickSend('I want to specify my Target Budget')">💵 Budget</div>
+  <div class="chip" onclick="quickSend('I want to specify my ZIP Code')">📍 ZIP Code</div>
+  <div class="chip" onclick="quickSend('I want to specify my Square Footage')">📐 Sq Footage</div>
+  <div class="chip" onclick="quickSend('I want to specify Home Stories')">🏢 Stories</div>
+  <div class="chip" onclick="quickSend('I want to specify Land Slope')">🏔️ Land Slope</div>
+  <div class="chip" onclick="quickSend('I want to specify Layout and Rooms')">🛏️ Rooms</div>
+  <div class="chip" onclick="quickSend('I want to specify Appliance Tier')">🍳 Appliances</div>
+  <div class="chip" onclick="quickSend('I want to specify Flooring Type')">🪵 Flooring</div>
+  <div class="chip" onclick="quickSend('I want to specify Roofing Type')">🏠 Roofing</div>
+</div>
+
+<div id="main-container">
+  <div id="log"></div>
+  <form id="form">
+    <input id="input" placeholder="Type a message or enter /reset to start over…" autocomplete="off" autofocus>
+    <button type="submit">Send</button>
+  </form>
+</div>
+
+<script>
+const log = document.getElementById("log");
+const form = document.getElementById("form");
+const input = document.getElementById("input");
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function bubble(who) {
+  const m = el("div", "msg " + who);
+  const b = el("div", "bubble");
+  m.appendChild(b);
+  log.appendChild(m);
+  log.scrollTop = log.scrollHeight;
+  return b;
+}
+
+function renderIntro() {
+  log.innerHTML = "";
+  const introBubble = bubble("agent");
+  const introHeader = el("div", null, "Welcome to the Custom Home Build Cost Estimator app! 🏡\n\nI will guide you step-by-step to gather all required parameters and generate your itemized cost breakdown, weather-adjusted timeline, and value engineering analysis.\n\nPlease provide the necessary details to proceed.");
+  introBubble.appendChild(introHeader);
+  
+  const step1Text = "\n\n### **Step 1 of 9: Target Construction Budget**\nWhat is your overall target construction budget in USD?\n\n- `[$500,000]`\n- `[$750,000]`\n- `[$1,000,000]`\n- `[$1,250,000]`";
+  const step1Node = el("div", null, step1Text);
+  introBubble.appendChild(step1Node);
+  parseAndRenderOptions(introBubble, step1Text);
+}
+
+function sendMessage(text) {
+  if (!text) return;
+  const cleanText = text.trim();
+  
+  // Handle local /reset or /restart directly
+  if (cleanText.toLowerCase() === "/reset" || cleanText.toLowerCase() === "/restart") {
+    input.value = "";
+    fetch("/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "/reset" })
+    }).finally(() => {
+      renderIntro();
+    });
+    return;
+  }
+
+  bubble("user").textContent = cleanText;
+  input.value = "";
+  const b = bubble("agent");
+  b.textContent = "Analyzing specifications…";
+  
+  fetch("/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: cleanText })
+  })
+  .then(res => res.text())
+  .then(raw => {
+    let data;
+    try { data = JSON.parse(raw); }
+    catch { throw new Error(`Non-JSON response: ${raw.slice(0, 200)}`); }
+    renderReply(b, data.parts || []);
+  })
+  .catch(e => {
+    b.textContent = "Error: " + e.message;
+  });
+}
+
+function quickSend(val) {
+  input.value = val;
+  form.dispatchEvent(new Event("submit", { cancelable: true }));
+}
+
+function parseAndRenderOptions(container, text) {
+  const pattern = /`?\[(.*?)\]`?/g;
+  const matches = [...text.matchAll(pattern)];
+  
+  if (matches.length > 0) {
+    const optBox = el("div", "quick-options");
+    matches.forEach(m => {
+      const optionText = m[1].trim();
+      if (optionText && optionText.length < 120) {
+        const btn = el("button", "quick-btn", optionText);
+        btn.type = "button";
+        btn.onclick = () => sendMessage(optionText);
+        optBox.appendChild(btn);
+      }
+    });
+    if (optBox.childNodes.length > 0) {
+      container.appendChild(optBox);
+    }
+  }
+}
+
+function renderReply(b, parts) {
+  b.textContent = "";
+  
+  // Check for reset part
+  const resetPart = parts.find(p => p && p.kind === "reset");
+  if (resetPart) {
+    renderIntro();
+    return;
+  }
+
+  const texts = parts.filter(p => p && (p.kind === "text" || (!p.kind && p.text))).map(p => p.text || "");
+  const textStr = texts.join("\n").trim();
+  
+  if (textStr) {
+    const textNode = el("div", null, textStr);
+    b.appendChild(textNode);
+    parseAndRenderOptions(b, textStr);
+  }
+
+  if (!b.childNodes.length) b.textContent = "(No response)";
+  log.scrollTop = log.scrollHeight;
+}
+
+form.addEventListener("submit", (ev) => {
+  ev.preventDefault();
+  const text = input.value.trim();
+  if (text) sendMessage(text);
+});
+
+// Initial welcome intro message
+window.addEventListener("DOMContentLoaded", () => {
+  renderIntro();
+});
+</script>
+</body>
+</html>
